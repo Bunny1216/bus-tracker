@@ -79,7 +79,7 @@ WSGI_APPLICATION = "tracker.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],   # backend/templates/dashboard.html
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -133,6 +133,9 @@ REST_FRAMEWORK = {
 CORS_URLS_REGEX = r"^/api/.*$"
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+
+# ---- Referrer policy: OpenStreetMap blocks tile requests that carry no Referer (403 "Access blocked") ----
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # ---- Production hardening ----
 if not DEBUG:
