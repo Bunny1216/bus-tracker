@@ -1,0 +1,55 @@
+/* style.css - mobile-first styles for the City Bus Tracker. */
+:root {
+  --accent: #1d6fe8;
+  --stop: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --text: #14202e;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); }
+#map { position: fixed; inset: 0; z-index: 0; }
+
+/* Floating glassmorphic header */
+.glass-header {
+  position: fixed; z-index: 1000;
+  top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px;
+  padding: 10px 16px; border-radius: 16px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(20, 32, 46, 0.18);
+}
+.glass-header h1 { margin: 0; font-size: 1.05rem; }
+.glass-header p { margin: 2px 0 0; font-size: 0.85rem; opacity: 0.8; }
+.glass-header .status { font-weight: 600; color: var(--accent); opacity: 1; }
+.glass-header .status.stale { color: #6b7480; }
+.glass-header .status.error { color: #c92a2a; }
+
+/* Custom circular stop markers (Leaflet divIcon) */
+.stop-marker {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--stop); border: 3px solid var(--accent);
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+/* Live bus marker with pulse ring */
+.bus-marker {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: #e5484d; border: 3px solid #fff; color: #fff; font-weight: 800; font-size: 13px;
+  box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.6); animation: pulse 1.8s infinite;
+  transition: background 0.3s;
+}
+@keyframes pulse { 70% { box-shadow: 0 0 0 16px rgba(229, 72, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0); } }
+/* No report for > 60 s: grey, no pulse */
+.bus-marker.stale { background: #8a94a3; animation: none; box-shadow: none; }
+
+.error-banner {
+  position: fixed; z-index: 1100; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding: 14px 16px; border-radius: 12px; background: #fff3f3; border: 1px solid #e5484d; font-size: 0.9rem;
+}
+.error-banner code { background: #fde0e0; padding: 1px 5px; border-radius: 4px; }
+
+@media (min-width: 768px) {
+  .glass-header { right: auto; width: 360px; left: 20px; top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .bus-marker { animation: none; } }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Real-time IoT city bus tracking: Gazipur Chowrasta to Abdullahpur.">
+  <title>City Bus Tracker | Gazipur - Abdullahpur</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="glass-header">
+    <h1>City Bus Tracker</h1>
+    <p>Gazipur Chowrasta &rarr; Abdullahpur</p>
+    <p id="bus-status" class="status">Loading route&hellip;</p>
+  </header>
+  <div id="map" role="application" aria-label="Bus route map"></div>
+  <div id="error-banner" class="error-banner" hidden></div>
+
+  <!-- Stop ETA bottom sheet (opened by tapping a stop marker) -->
+  <aside id="stop-sheet" class="stop-sheet" aria-hidden="true" aria-labelledby="sheet-title">
+    <div class="sheet-grip" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <div>
+        <h2 id="sheet-title">Stop</h2>
+        <p id="sheet-sub" class="sheet-sub"></p>
+      </div>
+      <button id="sheet-close" class="sheet-close" type="button" aria-label="Close stop details">&times;</button>
+    </div>
+    <ul id="sheet-list" class="eta-list" aria-live="polite"></ul>
+    <p id="sheet-msg" class="sheet-msg"></p>
+    <p id="sheet-updated" class="sheet-updated"></p>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Classic deferred script (not type="module") so the file:// error banner
+       can still run; browsers block ES modules on file:// URLs. -->
+  <script src="app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPX to route.json Converter</title>
+<!--
+  gpx_converter.html - standalone, zero-dependency GPX -> route.json converter.
+  Reads <trkpt>/<rtept> points, resamples the track every STEP_M metres using the
+  Haversine formula, and downloads a formatted [[lat, lng], ...] JSON file.
+  Runs fully offline: nothing is uploaded anywhere.
+-->
+<style>
+  body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#1b2430}
+  .drop{border:2px dashed #7a8aa0;border-radius:12px;padding:2rem;text-align:center;cursor:pointer}
+  .drop.over{background:#eaf2ff}
+  button{padding:.6rem 1.2rem;border:0;border-radius:8px;background:#1d6fe8;color:#fff;font-size:1rem;cursor:pointer}
+  button:disabled{background:#aab4c3;cursor:not-allowed}
+  pre{background:#f3f5f8;padding:1rem;border-radius:8px;max-height:220px;overflow:auto}
+  #status{margin:1rem 0;font-weight:600}
+</style>
+</head>
+<body>
+<h1>GPX &rarr; route.json</h1>
+<label class="drop" id="drop">Drop a .gpx file here or click to browse
+  <input id="file" type="file" accept=".gpx,application/gpx+xml" hidden></label>
+<p id="status">No file loaded.</p>
+<button id="download" disabled>Download route.json</button>
+<pre id="preview"></pre>
+<script>
+(() => {
+  'use strict';
+  const STEP_M = 30;                 // resampling interval in metres
+  const EARTH_R = 6371000;           // mean Earth radius in metres
+  let output = null;
+
+  /** Great-circle distance in metres between two [lat, lng] points (Haversine). */
+  const haversine = (a, b) => {
+    const rad = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * rad, dLng = (b[1] - a[1]) * rad;
+    const h = Math.sin(dLat / 2) ** 2 +
+              Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * EARTH_R * Math.asin(Math.sqrt(h));
+  };
+
+  /** Parses GPX text into [[lat, lng], ...]; falls back to route points. */
+  const parseGpx = (text) => {
+    const xml = new DOMParser().parseFromString(text, 'application/xml');
+    if (xml.querySelector('parsererror')) throw new Error('Invalid GPX/XML file.');
+    let nodes = xml.getElementsByTagName('trkpt');
+    if (!nodes.length) nodes = xml.getElementsByTagName('rtept');
+    const pts = Array.from(nodes, n => [parseFloat(n.getAttribute('lat')), parseFloat(n.getAttribute('lon'))])
+      .filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    if (pts.length < 2) throw new Error('No track points found in this file.');
+    return pts;
+  };
+
+  /**
+   * Walks along the polyline and emits a point every `step` metres.
+   * `need` = distance still required to reach the next sample; it carries
+   * across segments so spacing stays even around vertices.
+   */
+  const resample = (pts, step) => {
+    const out = [pts[0]];
+    let need = step;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1], d = haversine(a, b);
+      let pos = 0;
+      while (d - pos >= need) {
+        pos += need;
+        const t = pos / d;                         // linear interpolation (fine at ~30 m)
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+        need = step;
+      }
+      need -= d - pos;
+    }
+    const last = pts[pts.length - 1];
+    if (haversine(out[out.length - 1], last) > 1) out.push(last);
+    return out;
+  };
+
+  const $ = id => document.getElementById(id);
+  const handle = async (file) => {
+    try {
+      const pts = parseGpx(await file.text());
+      const res = resample(pts, STEP_M).map(p => [+p[0].toFixed(6), +p[1].toFixed(6)]);
+      output = '[\n' + res.map(p => '  [' + p[0].toFixed(6) + ', ' + p[1].toFixed(6) + ']').join(',\n') + '\n]\n';
+      $('status').textContent = `${pts.length} raw points -> ${res.length} points @ ${STEP_M} m`;
+      $('preview').textContent = output.split('\n').slice(0, 12).join('\n') + '\n  ...';
+      $('download').disabled = false;
+    } catch (e) {
+      output = null; $('download').disabled = true;
+      $('status').textContent = 'Error: ' + e.message; $('preview').textContent = '';
+    }
+  };
+
+  $('file').addEventListener('change', e => e.target.files[0] && handle(e.target.files[0]));
+  ['dragover', 'dragleave', 'drop'].forEach(ev => $('drop').addEventListener(ev, e => {
+    e.preventDefault(); $('drop').classList.toggle('over', ev === 'dragover');
+    if (ev === 'drop' && e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
+  }));
+  $('download').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([output], { type: 'application/json' }));
+    a.download = 'route.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+})();
+</script>
+</body>
+</html>

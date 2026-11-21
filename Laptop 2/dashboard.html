@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="{{ refresh_s }}">
+  <title>Operator dashboard | City Bus Tracker</title>
+  <style>
+    :root{--bg:#f3f5f8;--card:#fff;--text:#14202e;--muted:#5d6b7c;--line:#dde3ea;--accent:#1d6fe8;
+          --ok:#12805c;--ok-bg:#dff5ec;--warn:#9a5b00;--warn-bg:#fff0d4;--off:#5d6b7c;--off-bg:#e8ecf1;
+          --alert-bg:#fff3f3;--alert:#e5484d}
+    @media (prefers-color-scheme:dark){
+      :root{--bg:#0f1620;--card:#18222f;--text:#e6edf5;--muted:#93a1b3;--line:#2a3646;--accent:#6aa5ff;
+            --ok:#52d6a2;--ok-bg:#12372b;--warn:#ffc15a;--warn-bg:#3d2e0e;--off:#93a1b3;--off-bg:#243040;
+            --alert-bg:#3a1c1f;--alert:#ff7b80}}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+    main{max-width:960px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 32px}
+    header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px;margin-bottom:16px}
+    h1{margin:0;font-size:1.3rem}
+    .sub{color:var(--muted);font-size:.85rem}
+    .alert{background:var(--alert-bg);border:1px solid var(--alert);border-radius:12px;padding:12px 16px;margin-bottom:16px}
+    .alert strong{color:var(--alert)}
+    .alert ul{margin:6px 0 0;padding-left:20px}
+    .bus{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;
+         display:grid;grid-template-columns:1fr;gap:12px}
+    .bus-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .bus-head h2{margin:0;font-size:1.05rem}
+    .route{color:var(--muted);font-size:.85rem}
+    .badge{padding:3px 12px;border-radius:999px;font-weight:600;font-size:.82rem;white-space:nowrap}
+    .active{background:var(--ok-bg);color:var(--ok)}
+    .silent{background:var(--warn-bg);color:var(--warn)}
+    .offline{background:var(--off-bg);color:var(--off)}
+    dl{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin:0}
+    dt{color:var(--muted);font-size:.78rem}
+    dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+    form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    input[type=date]{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font:inherit}
+    button{padding:8px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+    .empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+    @media (min-width:720px){
+      .bus{grid-template-columns:200px 1fr auto;align-items:center}
+      dl{grid-template-columns:repeat(4,1fr)}
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Operator dashboard</h1>
+    <span class="sub">Updated {{ now|date:"H:i:s" }} &middot; refreshes every {{ refresh_s }} s</span>
+  </header>
+
+  {% if alerts %}
+  <section class="alert" role="alert">
+    <strong>{{ alerts|length }} bus{{ alerts|length|pluralize:",es" }} stopped reporting</strong>
+    (silent for more than {{ active_window_min }} minutes)
+    <ul>{% for a in alerts %}<li>{{ a.code }} &mdash; last seen {{ a.age }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% for row in rows %}
+  <article class="bus">
+    <div>
+      <div class="bus-head"><h2>{{ row.code }}</h2><span class="badge {{ row.status }}">{{ row.label }}</span></div>
+      <div class="route">{{ row.route }}</div>
+    </div>
+    <dl>
+      <div><dt>Last seen</dt><dd>{{ row.age }}</dd></div>
+      <div><dt>Speed</dt><dd>{% if row.speed is not None %}{{ row.speed|floatformat:1 }} km/h{% else %}&mdash;{% endif %}</dd></div>
+      <div><dt>Latency (latest)</dt><dd>{% if row.latency is not None %}{{ row.latency|floatformat:2 }} s{% else %}&mdash;{% endif %}</dd></div>
+      <div><dt>Latency (median)</dt><dd>{% if row.median_latency is not None %}{{ row.median_latency|floatformat:2 }} s{% else %}&mdash;{% endif %}</dd></div>
+    </dl>
+    <form method="get" action="{% url 'export_positions' %}">
+      <input type="hidden" name="bus" value="{{ row.code }}">
+      <input type="date" name="date" value="{{ row.default_date }}" aria-label="Trip date for {{ row.code }}">
+      <button type="submit">Download trip CSV</button>
+    </form>
+  </article>
+  {% empty %}
+  <div class="empty">No buses yet. Add a bus in the admin and post a position to see it here.</div>
+  {% endfor %}
+</main>
+</body>
+</html>
