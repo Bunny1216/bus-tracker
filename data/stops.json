@@ -2,57 +2,57 @@
   {
     "id": "S1",
     "name": "Gazipur Chowrasta",
-    "lat": 23.99235,
-    "lng": 90.38315,
+    "lat": 23.99238,
+    "lng": 90.38298,
     "order": 1
   },
   {
     "id": "S2",
     "name": "Bhogra Bypass",
-    "lat": 23.98065,
-    "lng": 90.38205,
+    "lat": 23.98052,
+    "lng": 90.38192,
     "order": 2
   },
   {
     "id": "S3",
     "name": "Gacha Bazar",
-    "lat": 23.9631,
-    "lng": 90.38125,
+    "lat": 23.96315,
+    "lng": 90.38122,
     "order": 3
   },
   {
     "id": "S4",
     "name": "Board Bazar",
-    "lat": 23.94455,
-    "lng": 90.38245,
+    "lat": 23.94452,
+    "lng": 90.38248,
     "order": 4
   },
   {
     "id": "S5",
     "name": "Tongi College Gate",
-    "lat": 23.90885,
-    "lng": 90.39765,
+    "lat": 23.90882,
+    "lng": 90.39768,
     "order": 5
   },
   {
     "id": "S6",
     "name": "Tongi Station Road",
-    "lat": 23.8967,
-    "lng": 90.40085,
+    "lat": 23.89668,
+    "lng": 90.40088,
     "order": 6
   },
   {
     "id": "S7",
     "name": "Tongi Bridge",
-    "lat": 23.8842,
-    "lng": 90.4013,
+    "lat": 23.88425,
+    "lng": 90.40132,
     "order": 7
   },
   {
     "id": "S8",
     "name": "Abdullahpur",
-    "lat": 23.87895,
-    "lng": 90.40045,
+    "lat": 23.87898,
+    "lng": 90.40048,
     "order": 8
   }
 ]

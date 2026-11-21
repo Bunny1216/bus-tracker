@@ -1,4 +1,4 @@
-/**
+﻿/**
  * app.js - City Bus Tracker (Leaflet.js front end, live API version)
  *
  * Data flow:
@@ -20,7 +20,7 @@
     pollMs: 4000,          // delay between /api/buses/ polls
     staleAfterS: 60,       // grey the marker after this many seconds without a report
     timeoutMs: 8000,       // per-request timeout
-    routeStyle: { color: '#1d6fe8', weight: 5, opacity: 0.85 },
+    routeStyle: { color: '#1d6fe8', weight: 6, opacity: 0.85 },
     tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors'
   };
