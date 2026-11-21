@@ -1,4 +1,4 @@
-"""Django settings for the City Bus Tracker. All secrets come from environment variables."""
+﻿"""Django settings for the City Bus Tracker. All secrets come from environment variables."""
 import os
 from pathlib import Path
 
@@ -42,12 +42,16 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("The SECRET_KEY environment variable is required when DEBUG is off.")
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")   # e.g. https://my-app.onrender.com
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
-_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")   # set automatically on Render
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if _render_host:
     ALLOWED_HOSTS.append(_render_host)
     CSRF_TRUSTED_ORIGINS.append(f"https://{_render_host}")
+
+if not DEBUG:
+    ALLOWED_HOSTS.append(".onrender.com")
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -63,7 +67,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",              # must sit above WhiteNoise/CommonMiddleware
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -76,10 +80,14 @@ MIDDLEWARE = [
 ROOT_URLCONF = "tracker.urls"
 WSGI_APPLICATION = "tracker.wsgi.application"
 
+# Ensure backend/templates exists so Django never warns or fails on dashboard templates
+TEMPLATES_DIR = BASE_DIR / "templates"
+TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],   # backend/templates/dashboard.html
+        "DIRS": [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -91,11 +99,20 @@ TEMPLATES = [
     },
 ]
 
-# DATABASE_URL (Postgres on the host); falls back to local SQLite.
-DATABASES = {
-    "default": dj_database_url.config(conn_max_age=600)
-    or {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
-}
+# DATABASE_URL (Postgres on Render); falls back to local SQLite.
+_db_url = os.environ.get("DATABASE_URL", "").strip()
+if _db_url:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            _db_url,
+            conn_max_age=600,
+            ssl_require=not DEBUG and "render.com" in _db_url,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -105,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"      # keep UTC so device timestamps are never reinterpreted
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -117,24 +134,30 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
-WHITENOISE_ROOT = REPO_ROOT / "web"     # web/index.html -> "/", web/app.js -> "/app.js"
-WHITENOISE_INDEX_FILE = True
 
-# ---- DRF: JSON only, no session auth (the ingest endpoint uses X-API-Key) ----
+WEB_DIR = REPO_ROOT / "web"
+if WEB_DIR.is_dir():
+    WHITENOISE_ROOT = WEB_DIR
+    WHITENOISE_INDEX_FILE = True
+
+# ---- DRF: JSON only, custom X-API-Key auth on ingest, rate limiting ready ----
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"]
     + (["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
+    "DEFAULT_THROTTLE_RATES": {
+        "ingest": "60/minute",
+    },
 }
 
-# ---- CORS (only needed when the frontend runs on another origin, e.g. Live Server) ----
+# ---- CORS (only needed when frontend runs on a separate port, e.g. Live Server) ----
 CORS_URLS_REGEX = r"^/api/.*$"
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 
-# ---- Referrer policy: OpenStreetMap blocks tile requests that carry no Referer (403 "Access blocked") ----
+# ---- Referrer policy: OpenStreetMap requires Referer header for tiles ----
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # ---- Production hardening ----
@@ -142,7 +165,6 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    # Leave FORCE_HTTPS off while bench-testing the modem over plain HTTP; turn it on afterwards.
     SECURE_SSL_REDIRECT = env_bool("FORCE_HTTPS", False)
     SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0"))
 
